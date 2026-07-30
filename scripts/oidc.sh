@@ -13,6 +13,14 @@ az identity create \
   --resource-group "$RG" \
   --location "$LOCATION"
 
+RG_ID=$(az group show --name "mcherfiRG" --query id -o tsv)
+PRINCIPAL_ID=$(az identity show --name "github-mi-malikcherfi" --resource-group "mcherfiRG" --query principalId -o tsv)
+
+az role assignment create \
+  --assignee "$PRINCIPAL_ID" \
+  --role "Contributor" \
+  --scope "$RG_ID"
+
 CLIENT_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RG" --query clientId -o tsv)
 SUB_ID=$(az account show --query id -o tsv)
 TENANT_ID=$(az account show --query tenantId -o tsv)
