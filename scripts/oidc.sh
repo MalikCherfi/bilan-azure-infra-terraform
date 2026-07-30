@@ -23,7 +23,7 @@ az identity federated-credential create \
   --identity-name "$IDENTITY_NAME" \
   --resource-group "$RG" \
   --issuer "https://token.actions.githubusercontent.com" \
-  --subject "repo:${GITHUB_ORG}/${GITHUB_REPO}:ref:refs/heads/${BRANCH}" \
+  --subject "repo:MalikCherfi@90403152/bilan-azure-infra-terraform@1317064255:ref:refs/heads/main" \
   --audiences "api://AzureADTokenExchange"
 
 # Create federated credentials for pull requests
@@ -32,7 +32,7 @@ az identity federated-credential create \
   --identity-name "$IDENTITY_NAME" \
   --resource-group "$RG" \
   --issuer "https://token.actions.githubusercontent.com" \
-  --subject "repo:MalikCherfi/bilan-azure-infra-terraform:pull_request" \
+  --subject "repo:MalikCherfi@90403152/bilan-azure-infra-terraform@1317064255:pull_request" \
   --audiences "api://AzureADTokenExchange"
 
 echo "AZURE_CLIENT_ID=$CLIENT_ID"
