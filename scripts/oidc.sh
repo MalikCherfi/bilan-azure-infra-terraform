@@ -17,12 +17,22 @@ CLIENT_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RG" --qu
 SUB_ID=$(az account show --query id -o tsv)
 TENANT_ID=$(az account show --query tenantId -o tsv)
 
+# Create federated credentials for main
 az identity federated-credential create \
   --name "github-${GITHUB_REPO}-${BRANCH}" \
   --identity-name "$IDENTITY_NAME" \
   --resource-group "$RG" \
   --issuer "https://token.actions.githubusercontent.com" \
   --subject "repo:${GITHUB_ORG}/${GITHUB_REPO}:ref:refs/heads/${BRANCH}" \
+  --audiences "api://AzureADTokenExchange"
+
+# Create federated credentials for pull requests
+az identity federated-credential create \
+  --name "github-${GITHUB_REPO}-${BRANCH}" \
+  --identity-name "$IDENTITY_NAME" \
+  --resource-group "$RG" \
+  --issuer "https://token.actions.githubusercontent.com" \
+  --subject "repo:MalikCherfi/bilan-azure-infra-terraform:pull_request" \
   --audiences "api://AzureADTokenExchange"
 
 echo "AZURE_CLIENT_ID=$CLIENT_ID"
