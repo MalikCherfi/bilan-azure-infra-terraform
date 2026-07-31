@@ -114,6 +114,23 @@ resource "azurerm_managed_redis" "redis" {
   sku_name            = "Balanced_B3"
   tags                = local.tags
 
+  default_database {
+    clustering_policy = "OSSCluster"
+    eviction_policy   = "VolatileLRU"
+  }
+
+}
+
+resource "azurerm_key_vault_secret" "redis_password" {
+  name         = "redis-password"
+  value        = azurerm_managed_redis.redis.default_database[0].primary_access_key
+  key_vault_id = azurerm_key_vault.keyvault.id
+}
+
+resource "azurerm_key_vault_secret" "redis_hostname" {
+  name         = "redis-hostname"
+  value        = azurerm_managed_redis.redis.hostname
+  key_vault_id = azurerm_key_vault.keyvault.id
 }
 
 
