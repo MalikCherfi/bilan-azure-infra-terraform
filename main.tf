@@ -82,7 +82,7 @@ resource "azurerm_postgresql_flexible_server" "psql_flexible_server" {
   administrator_login    = "malikcherfi"
   administrator_password = random_password.psql_admin.result
   storage_mb             = 32768
-  sku_name               = "B_Standard_B1s"
+  sku_name               = "B_Standard_B1ms"
   tags                   = local.tags
 }
 
