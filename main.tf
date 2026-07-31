@@ -26,7 +26,7 @@ data "azurerm_kubernetes_cluster" "shared" {
 
 # Assign ACR pull role
 resource "azurerm_role_assignment" "acr_pull" {
-  principal_id                     = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
-  role_definition_name             = "AcrPull"
-  scope                            = azurerm_container_registry.acr.id
+  principal_id         = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
+  role_definition_name = "AcrPull"
+  scope                = azurerm_container_registry.acr.id
 }
