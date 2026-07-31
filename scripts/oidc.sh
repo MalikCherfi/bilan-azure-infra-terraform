@@ -27,7 +27,7 @@ TENANT_ID=$(az account show --query tenantId -o tsv)
 
 # Create federated credentials for main
 az identity federated-credential create \
-  --name "github-${GITHUB_REPO}-${BRANCH}" \
+  --name "github-${GITHUB_REPO}-${BRANCH}-main" \
   --identity-name "$IDENTITY_NAME" \
   --resource-group "$RG" \
   --issuer "https://token.actions.githubusercontent.com" \
@@ -36,7 +36,7 @@ az identity federated-credential create \
 
 # Create federated credentials for pull requests
 az identity federated-credential create \
-  --name "github-${GITHUB_REPO}-${BRANCH}" \
+  --name "github-${GITHUB_REPO}-${BRANCH}-pull-requests" \
   --identity-name "$IDENTITY_NAME" \
   --resource-group "$RG" \
   --issuer "https://token.actions.githubusercontent.com" \
