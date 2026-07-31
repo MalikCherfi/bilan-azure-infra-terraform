@@ -8,18 +8,21 @@ GITHUB_ORG="MalikCherfi"
 GITHUB_REPO="bilan-azure-infra-terraform"
 BRANCH="main"
 
-az identity create \
-  --name "$IDENTITY_NAME" \
-  --resource-group "$RG" \
-  --location "$LOCATION"
-
 RG_ID=$(az group show --name "mcherfiRG" --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --name "github-mi-malikcherfi" --resource-group "mcherfiRG" --query principalId -o tsv)
 
-az role assignment create \
+if [ -z "$PRINCIPAL_ID" ]; then
+  az identity create \
+    --name "$IDENTITY_NAME" \
+    --resource-group "$RG" \
+    --location "$LOCATION"
+  PRINCIPAL_ID=$(az identity show --name "github-mi-malikcherfi" --resource-group "mcherfiRG" --query principalId -o tsv)
+
+  az role assignment create \
   --assignee "$PRINCIPAL_ID" \
   --role "Contributor" \
   --scope "$RG_ID"
+fi
 
 CLIENT_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RG" --query clientId -o tsv)
 SUB_ID=$(az account show --query id -o tsv)
