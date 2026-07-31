@@ -52,7 +52,7 @@ resource "azurerm_key_vault" "keyvault" {
 
 # Create a azure container registry
 resource "azurerm_container_registry" "acr" {
-  name                = "acr"
+  name                = "containerregistry"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "Basic"
