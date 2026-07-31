@@ -37,8 +37,8 @@ resource "azurerm_key_vault" "keyvault" {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_client_config.current.object_id
 
-    key_permissions = ["Get", "List", "Create", "Delete"]
-    secret_permissions = ["Get", "List", "Set", "Delete"]
+    key_permissions     = ["Get", "List", "Create", "Delete"]
+    secret_permissions  = ["Get", "List", "Set", "Delete"]
     storage_permissions = ["Get", "List"]
   }
 
@@ -100,11 +100,6 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
   server_id = azurerm_postgresql_flexible_server.psql_flexible_server.id
   collation = "en_US.utf8"
   charset   = "UTF8"
-
-  # prevent the possibility of accidental data loss
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # Create a redis cache
