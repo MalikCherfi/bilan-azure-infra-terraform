@@ -75,7 +75,7 @@ resource "random_password" "psql_admin" {
 
 # Create a postgresql flexible server
 resource "azurerm_postgresql_flexible_server" "psql_flexible_server" {
-  name                   = "psqlflexibleserver"
+  name                   = "psqlflexibleservermcherfi"
   resource_group_name    = var.resource_group_name
   location               = var.location
   version                = "16"
