@@ -6,6 +6,9 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    time = {
+      source = "hashicorp/time"
+    }
   }
 }
 
@@ -20,5 +23,6 @@ provider "azurerm" {
       purge_soft_delete_on_destroy    = true
       recover_soft_deleted_key_vaults = true
     }
+
   }
 }
