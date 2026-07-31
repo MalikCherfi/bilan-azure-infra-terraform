@@ -32,21 +32,22 @@ resource "azurerm_key_vault" "keyvault" {
 
   sku_name = "standard"
 
+  # Accès pour Terraform lui-même (l'identity OIDC qui exécute l'apply)
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    key_permissions = ["Get", "List", "Create", "Delete"]
+    secret_permissions = ["Get", "List", "Set", "Delete"]
+    storage_permissions = ["Get", "List"]
+  }
+
+  # Accès pour AKS (le kubelet qui va récupérer les secrets à l'exécution)
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
 
-    key_permissions = [
-      "Get",
-    ]
-
-    secret_permissions = [
-      "Get",
-    ]
-
-    storage_permissions = [
-      "Get",
-    ]
+    secret_permissions = ["Get"]
   }
 }
 
