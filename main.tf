@@ -20,7 +20,7 @@ data "azurerm_kubernetes_cluster" "shared" {
 
 # Create a key vault
 resource "azurerm_key_vault" "keyvault" {
-  name                        = "keyvault"
+  name                        = "keyvault-${var.owner}"
   location                    = var.location
   resource_group_name         = var.resource_group_name
   rbac_authorization_enabled  = false
@@ -52,7 +52,7 @@ resource "azurerm_key_vault" "keyvault" {
 
 # Create a azure container registry
 resource "azurerm_container_registry" "acr" {
-  name                = "containerregistry"
+  name                = "containerregistrymcherfi"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "Basic"
@@ -82,7 +82,7 @@ resource "azurerm_postgresql_flexible_server" "psql_flexible_server" {
   administrator_login    = "malikcherfi"
   administrator_password = random_password.psql_admin.result
   storage_mb             = 32768
-  sku_name               = "GP_Standard_D4s_v3"
+  sku_name               = "B1s"
   tags                   = local.tags
 }
 
@@ -108,10 +108,10 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
 
 # Create a redis cache
 resource "azurerm_managed_redis" "redis" {
-  name                = "redis"
+  name                = "redismcherfi"
   resource_group_name = var.resource_group_name
   location            = var.location
-  sku_name            = "Balanced_B3"
+  sku_name            = "Balanced_B0"
   tags                = local.tags
 
   default_database {
