@@ -52,7 +52,7 @@ resource "azurerm_key_vault" "keyvault" {
 
 # Create a azure container registry
 resource "azurerm_container_registry" "acr" {
-  name                = "container-registry"
+  name                = "acr"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "Basic"
@@ -79,7 +79,7 @@ resource "azurerm_postgresql_flexible_server" "psql_flexible_server" {
   resource_group_name    = var.resource_group_name
   location               = var.location
   version                = "16"
-  administrator_login    = "admin"
+  administrator_login    = "malikcherfi"
   administrator_password = random_password.psql_admin.result
   storage_mb             = 32768
   sku_name               = "GP_Standard_D4s_v3"
@@ -107,8 +107,8 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
 }
 
 # Create a redis cache
-resource "azurerm_managed_redis" "redis_cache" {
-  name                = "redis_cache"
+resource "azurerm_managed_redis" "redis" {
+  name                = "redis"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku_name            = "Balanced_B3"
