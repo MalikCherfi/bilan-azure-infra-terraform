@@ -9,6 +9,8 @@ locals {
   )
 }
 
+
+
 # Get current subscription
 data "azurerm_client_config" "current" {}
 
@@ -51,6 +53,11 @@ resource "azurerm_key_vault" "keyvault" {
   }
 }
 
+resource "time_sleep" "wait_for_access_policy" {
+  depends_on      = [azurerm_key_vault.keyvault]
+  create_duration = "60s"
+}
+
 # Create a azure container registry
 resource "azurerm_container_registry" "acr" {
   name                = "containerregistrymcherfi"
@@ -85,6 +92,7 @@ resource "azurerm_postgresql_flexible_server" "psql_flexible_server" {
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
   tags                   = local.tags
+  zone                   = "1"
 }
 
 # Create a key vault secret
@@ -92,6 +100,7 @@ resource "azurerm_key_vault_secret" "psql_password" {
   name         = "psql-admin-password"
   value        = random_password.psql_admin.result
   key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [time_sleep.wait_for_access_policy]
 }
 
 # Create a postgresql database
@@ -121,12 +130,14 @@ resource "azurerm_key_vault_secret" "redis_password" {
   name         = "redis-password"
   value        = azurerm_managed_redis.redis.default_database[0].primary_access_key
   key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [time_sleep.wait_for_access_policy]
 }
 
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = "redis-hostname"
   value        = azurerm_managed_redis.redis.hostname
   key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [time_sleep.wait_for_access_policy]
 }
 
 
