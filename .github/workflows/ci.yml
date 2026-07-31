@@ -35,7 +35,7 @@ jobs:
         uses: hashicorp/setup-terraform@v4
 
       - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+        run: terraform fmt -check -diff -recursive
         continue-on-error: true
 
       - name: Checkov
