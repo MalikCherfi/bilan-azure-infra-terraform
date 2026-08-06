@@ -20,6 +20,24 @@ data "azurerm_kubernetes_cluster" "shared" {
   resource_group_name = "rg-shared-prf2026"
 }
 
+provider "helm" {
+  kubernetes = {
+    host                   = data.azurerm_kubernetes_cluster.shared.kube_config.0.host
+    client_certificate     = base64decode(data.azurerm_kubernetes_cluster.shared.kube_config.0.client_certificate)
+    client_key             = base64decode(data.azurerm_kubernetes_cluster.shared.kube_config.0.client_key)
+    cluster_ca_certificate = base64decode(data.azurerm_kubernetes_cluster.shared.kube_config.0.cluster_ca_certificate)
+  }
+}
+
+# Create a namespace for ingress-nginx
+resource "helm_release" "ingress_nginx" {
+  name             = "ingress-nginx"
+  repository       = "https://kubernetes.github.io/ingress-nginx"
+  chart            = "ingress-nginx"
+  namespace        = "ingress-nginx"
+  create_namespace = true
+}
+
 # Create a key vault
 resource "azurerm_key_vault" "keyvault" {
   name                        = "keyvault-${var.owner}"
@@ -139,6 +157,4 @@ resource "azurerm_key_vault_secret" "redis_hostname" {
   key_vault_id = azurerm_key_vault.keyvault.id
   depends_on   = [time_sleep.wait_for_access_policy]
 }
-
-
 
