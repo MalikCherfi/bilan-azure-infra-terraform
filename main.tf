@@ -134,6 +134,22 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
   charset   = "UTF8"
 }
 
+# Autoriser les services Azure (dont le cluster AKS) à contacter PostgreSQL
+resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
+  name             = "allow-azure-services"
+  server_id        = azurerm_postgresql_flexible_server.psql_flexible_server.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
+# (Optionnel mais recommandé) Stocker le FQDN de la base dans Key Vault
+resource "azurerm_key_vault_secret" "psql_host" {
+  name         = "psql-host"
+  value        = azurerm_postgresql_flexible_server.psql_flexible_server.fqdn
+  key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [time_sleep.wait_for_access_policy]
+}
+
 # Create a redis cache
 resource "azurerm_managed_redis" "redis" {
   name                = "redismcherfi"
