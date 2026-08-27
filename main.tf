@@ -159,10 +159,16 @@ resource "azurerm_managed_redis" "redis" {
   tags                = local.tags
 
   default_database {
-    clustering_policy = "OSSCluster"
-    eviction_policy   = "VolatileLRU"
+    access_keys_authentication_enabled = true
+    clustering_policy                  = "OSSCluster"
+    eviction_policy                    = "VolatileLRU"
   }
 
+}
+
+output "redis_primary_access_key" {
+  value     = azurerm_managed_redis.redis.default_database[0].primary_access_key
+  sensitive = true
 }
 
 resource "azurerm_key_vault_secret" "redis_password" {
