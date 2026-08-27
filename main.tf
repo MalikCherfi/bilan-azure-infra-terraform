@@ -169,8 +169,8 @@ resource "azurerm_managed_redis" "redis" {
 # Storage Account Azure
 resource "azurerm_storage_account" "sa" {
   name                     = "stbilanappmcherfi"
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
+  resource_group_name      = var.resource_group_name
+  location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
