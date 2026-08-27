@@ -230,6 +230,12 @@ resource "azurerm_key_vault_secret" "storage_sas" {
   key_vault_id = azurerm_key_vault.keyvault.id
 }
 
+resource "azurerm_key_vault_secret" "container_name" {
+  name         = "storage-container-name"
+  value        = azurerm_storage_container.container.name
+  key_vault_id = azurerm_key_vault.keyvault.id
+}
+
 output "redis_primary_access_key" {
   value     = azurerm_managed_redis.redis.default_database[0].primary_access_key
   sensitive = true
