@@ -166,6 +166,70 @@ resource "azurerm_managed_redis" "redis" {
 
 }
 
+# Storage Account Azure
+resource "azurerm_storage_account" "sa" {
+  name                     = "stbilanappmcherfi"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+# Container Blob par défaut (optionnel mais recommandé)
+resource "azurerm_storage_container" "container" {
+  name                  = "uploads"
+  storage_account_id    = azurerm_storage_account.sa.id
+  container_access_type = "private"
+}
+
+# Génération automatique du token SAS
+data "azurerm_storage_account_sas" "sas" {
+  connection_string = azurerm_storage_account.sa.primary_connection_string
+  https_only        = true
+
+  resource_types {
+    service   = true
+    container = true
+    object    = true
+  }
+
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
+
+  permissions {
+    read    = true
+    write   = true
+    delete  = true
+    list    = true
+    add     = true
+    create  = true
+    update  = true
+    process = false
+    tag     = false
+    filter  = false
+  }
+
+  start  = "2026-01-01T00:00:00Z"
+  expiry = "2028-01-01T00:00:00Z"
+}
+
+# Stockage des secrets dans Key Vault
+resource "azurerm_key_vault_secret" "storage_name" {
+  name         = "storage-account-name"
+  value        = azurerm_storage_account.sa.name
+  key_vault_id = azurerm_key_vault.keyvault.id
+}
+
+resource "azurerm_key_vault_secret" "storage_sas" {
+  name         = "storage-sas-token"
+  value        = data.azurerm_storage_account_sas.sas.sas
+  key_vault_id = azurerm_key_vault.keyvault.id
+}
+
 output "redis_primary_access_key" {
   value     = azurerm_managed_redis.redis.default_database[0].primary_access_key
   sensitive = true
