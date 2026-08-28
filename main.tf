@@ -203,23 +203,6 @@ resource "azurerm_managed_redis" "redis" {
 #   end_ip              = "4.211.70.39"
 # }
 
-resource "terraform_data" "redis_firewall_rule" {
-  triggers_replace = [
-    "4.211.70.39"
-  ]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      az redis firewall-rules create \
-        --resource-group ${var.resource_group_name} \
-        --name ${azurerm_managed_redis.redis.name} \
-        --rule-name allowaksegress \
-        --start-ip 4.211.70.39 \
-        --end-ip 4.211.70.39
-    EOT
-  }
-}
-
 # Storage Account Azure
 resource "azurerm_storage_account" "sa" {
   name                     = "stbilanappmcherfi"
