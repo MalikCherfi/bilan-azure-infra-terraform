@@ -43,18 +43,6 @@ resource "helm_release" "ingress_nginx" {
   }]
 }
 
-# 1. Lister les IP publiques créées par AKS dans le groupe MC_
-data "azurerm_resources" "aks_public_ips" {
-  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
-  type                = "Microsoft.Network/publicIPAddresses"
-}
-
-# 2. Récupérer l'IP publique générée pour le Load Balancer d'AKS
-data "azurerm_public_ip" "aks_egress" {
-  name                = data.azurerm_resources.aks_public_ips.resources[0].name
-  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
-}
-
 # 2. On trouve automatiquement le VNet généré par Azure dans le groupe MC_
 data "azurerm_resources" "aks_vnet_list" {
   resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
@@ -190,8 +178,8 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
   name             = "allow-azure-services"
   server_id        = azurerm_postgresql_flexible_server.psql_flexible_server.id
-  start_ip_address = data.azurerm_public_ip.aks_egress.ip_address
-  end_ip_address   = data.azurerm_public_ip.aks_egress.ip_address
+  start_ip_address = "4.211.70.39"
+  end_ip_address   = "4.211.70.39"
 }
 
 # (Optionnel mais recommandé) Stocker le FQDN de la base dans Key Vault
@@ -222,8 +210,8 @@ resource "azurerm_redis_firewall_rule" "aks" {
   name                = "allowaksegress"
   redis_cache_name    = azurerm_managed_redis.redis.name
   resource_group_name = var.resource_group_name
-  start_ip            = data.azurerm_public_ip.aks_egress.ip_address
-  end_ip              = data.azurerm_public_ip.aks_egress.ip_address
+  start_ip            = "4.211.70.39"
+  end_ip              = "4.211.70.39"
 }
 
 # Storage Account Azure
