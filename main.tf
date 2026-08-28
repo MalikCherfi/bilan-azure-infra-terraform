@@ -72,15 +72,23 @@ resource "azurerm_key_vault" "keyvault" {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
 
-    secret_permissions = [
-      "Get",
-      "List",
-      "Set",
-      "Delete",
-      "Recover",
-      "Purge"
-    ]
+    secret_permissions = ["Get"]
   }
+}
+
+resource "azurerm_key_vault_access_policy" "keyvault_access_policy" {
+  key_vault_id = azurerm_key_vault.keyvault.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = data.azurerm_client_config.current.object_id
+
+  secret_permissions = [
+    "Get",
+    "List",
+    "Set",
+    "Delete",
+    "Recover",
+    "Purge"
+  ]
 }
 
 resource "time_sleep" "wait_for_access_policy" {
