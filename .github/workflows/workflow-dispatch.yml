@@ -47,6 +47,13 @@ jobs:
         run: terraform fmt -check -diff -recursive
         continue-on-error: true
 
+      - name: Autoriser l'IP du runner sur le Key Vault
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az keyvault network-rule add \
+          --name keyvault-malik-cherfi \
+          --ip-address "$RUNNER_IP/32"
+
       - name: Terraform Init
         run: |
           terraform init \
@@ -69,3 +76,11 @@ jobs:
       - name: Terraform Destroy
         if: ${{ inputs.action == 'destroy' }}
         run: terraform destroy -auto-approve
+
+      - name: Retirer l'IP du runner (Cleanup)
+        if: always()
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az keyvault network-rule remove \
+          --name keyvault-malik-cherfi \
+          --ip-address "$RUNNER_IP/32"
