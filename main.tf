@@ -42,25 +42,6 @@ resource "helm_release" "ingress_nginx" {
     value = "/healthz"
   }]
 }
-
-# 2. On trouve automatiquement le VNet généré par Azure dans le groupe MC_
-data "azurerm_resources" "aks_vnet_list" {
-  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
-  type                = "Microsoft.Network/virtualNetworks"
-}
-
-# 3. On charge les informations de ce VNet
-data "azurerm_virtual_network" "aks_vnet" {
-  name                = data.azurerm_resources.aks_vnet_list.resources[0].name
-  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
-}
-
-# 4. On récupère le Subnet créé par Azure
-data "azurerm_subnet" "aks_subnet" {
-  name                 = data.azurerm_virtual_network.aks_vnet.subnets[0]
-  virtual_network_name = data.azurerm_virtual_network.aks_vnet.name
-  resource_group_name  = data.azurerm_kubernetes_cluster.shared.node_resource_group
-}
 # Create a key vault
 resource "azurerm_key_vault" "keyvault" {
   name                          = "keyvault-${var.owner}"
@@ -97,7 +78,7 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action             = "Deny"
     bypass                     = "AzureServices"
-    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
+    virtual_network_subnet_ids = [data.azurerm_kubernetes_cluster.shared.default_node_pool[0].vnet_subnet_id]
   }
 }
 
@@ -225,7 +206,7 @@ resource "azurerm_storage_account" "sa" {
   network_rules {
     default_action             = "Deny"
     bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
+    virtual_network_subnet_ids = [data.azurerm_kubernetes_cluster.shared.default_node_pool[0].vnet_subnet_id]
   }
 }
 
