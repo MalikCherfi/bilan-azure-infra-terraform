@@ -43,17 +43,41 @@ resource "helm_release" "ingress_nginx" {
   }]
 }
 
+data "azurerm_public_ip" "aks_egress" {
+  name                = split("/", element(tolist(data.azurerm_kubernetes_cluster.shared.network_profile[0].load_balancer_profile[0].effective_outbound_ips), 0))[8]
+  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
+}
+
+# 2. On trouve automatiquement le VNet généré par Azure dans le groupe MC_
+data "azurerm_resources" "aks_vnet_list" {
+  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
+  type                = "Microsoft.Network/virtualNetworks"
+}
+
+# 3. On charge les informations de ce VNet
+data "azurerm_virtual_network" "aks_vnet" {
+  name                = data.azurerm_resources.aks_vnet_list.resources[0].name
+  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
+}
+
+# 4. On récupère le Subnet créé par Azure
+data "azurerm_subnet" "aks_subnet" {
+  name                 = data.azurerm_virtual_network.aks_vnet.subnets[0]
+  virtual_network_name = data.azurerm_virtual_network.aks_vnet.name
+  resource_group_name  = data.azurerm_kubernetes_cluster.shared.node_resource_group
+}
 # Create a key vault
 resource "azurerm_key_vault" "keyvault" {
-  name                        = "keyvault-${var.owner}"
-  location                    = var.location
-  resource_group_name         = var.resource_group_name
-  rbac_authorization_enabled  = false
-  enabled_for_disk_encryption = true
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  soft_delete_retention_days  = 7
-  purge_protection_enabled    = false
-  tags                        = local.tags
+  name                          = "keyvault-${var.owner}"
+  location                      = var.location
+  resource_group_name           = var.resource_group_name
+  rbac_authorization_enabled    = false
+  enabled_for_disk_encryption   = true
+  tenant_id                     = data.azurerm_client_config.current.tenant_id
+  soft_delete_retention_days    = 7
+  purge_protection_enabled      = false
+  public_network_access_enabled = true
+  tags                          = local.tags
 
   sku_name = "standard"
 
@@ -73,6 +97,12 @@ resource "azurerm_key_vault" "keyvault" {
     object_id = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
 
     secret_permissions = ["Get"]
+  }
+
+  network_acls {
+    default_action             = "Deny"
+    bypass                     = "AzureServices"
+    virtual_network_subnet_ids = [azurerm_subnet.aks_subnet.id]
   }
 }
 
@@ -153,8 +183,8 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
   name             = "allow-azure-services"
   server_id        = azurerm_postgresql_flexible_server.psql_flexible_server.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
+  start_ip_address = data.azurerm_public_ip.aks_egress.ip_address
+  end_ip_address   = data.azurerm_public_ip.aks_egress.ip_address
 }
 
 # (Optionnel mais recommandé) Stocker le FQDN de la base dans Key Vault
@@ -181,6 +211,14 @@ resource "azurerm_managed_redis" "redis" {
 
 }
 
+resource "azurerm_redis_firewall_rule" "aks" {
+  name                = "allow-aks-egress"
+  redis_cache_name    = azurerm_managed_redis.redis.name
+  resource_group_name = data.azurerm_resource_group.rg.name
+  start_ip            = data.azurerm_public_ip.aks_egress.ip_address
+  end_ip              = data.azurerm_public_ip.aks_egress.ip_address
+}
+
 # Storage Account Azure
 resource "azurerm_storage_account" "sa" {
   name                     = "stbilanappmcherfi"
@@ -188,6 +226,12 @@ resource "azurerm_storage_account" "sa" {
   location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
+
+  network_rules {
+    default_action             = "Deny"
+    bypass                     = ["AzureServices"]
+    virtual_network_subnet_ids = [azurerm_subnet.aks_subnet.id]
+  }
 }
 
 # Container Blob par défaut (optionnel mais recommandé)
