@@ -138,7 +138,7 @@ resource "azurerm_key_vault_secret" "psql_password" {
   name         = "psql-admin-password"
   value        = random_password.psql_admin.result
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy]
+  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
 # Create a postgresql database
@@ -237,18 +237,22 @@ resource "azurerm_key_vault_secret" "storage_name" {
   name         = "storage-account-name"
   value        = azurerm_storage_account.sa.name
   key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [azurerm_key_vault_access_policy.keyvault_access_policy]
+
 }
 
 resource "azurerm_key_vault_secret" "storage_sas" {
   name         = "storage-sas-token"
   value        = data.azurerm_storage_account_sas.sas.sas
   key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
 resource "azurerm_key_vault_secret" "container_name" {
   name         = "storage-container-name"
   value        = azurerm_storage_container.container.name
   key_vault_id = azurerm_key_vault.keyvault.id
+  depends_on   = [azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
 output "redis_primary_access_key" {
@@ -260,14 +264,14 @@ resource "azurerm_key_vault_secret" "redis_password" {
   name         = "redis-password"
   value        = azurerm_managed_redis.redis.default_database[0].primary_access_key
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy]
+  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = "redis-hostname"
   value        = azurerm_managed_redis.redis.hostname
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy]
+  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
 resource "random_password" "backend_api_key" {
@@ -279,6 +283,6 @@ resource "azurerm_key_vault_secret" "backend-api-key" {
   name         = "backend-api-key"
   value        = random_password.backend_api_key.result
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy]
+  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
