@@ -1,7 +1,5 @@
 # bilan-azure-infra-terraform
 
-# bilan-azure-infra-terraform
-
 Infra Azure (AKS partagé, PostgreSQL, Redis, ACR, Storage, Key Vault) déployée via Terraform + OIDC GitHub Actions.
 
 ## Ressources créées
