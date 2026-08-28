@@ -161,22 +161,15 @@ resource "azurerm_postgresql_flexible_server_database" "psql_database" {
   charset   = "UTF8"
 }
 
-resource "terraform_data" "redis_firewall_rule" {
-  triggers_replace = [
-    data.azurerm_public_ip.aks_egress.ip_address
-  ]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      az redis firewall-rule create \
-        --resource-group ${var.resource_group_name} \
-        --name ${azurerm_redis_cache.redis.name} \
-        --rule-name allowaksegress \
-        --start-ip 4.211.70.39 \
-        --end-ip 4.211.70.39
-    EOT
-  }
+# Autoriser les services Azure (dont le cluster AKS) à contacter PostgreSQL
+resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
+  name             = "allow-azure-services"
+  server_id        = azurerm_postgresql_flexible_server.psql_flexible_server.id
+  start_ip_address = "4.211.70.39"
+  end_ip_address   = "4.211.70.39"
 }
+
+
 
 # (Optionnel mais recommandé) Stocker le FQDN de la base dans Key Vault
 resource "azurerm_key_vault_secret" "psql_host" {
@@ -202,12 +195,29 @@ resource "azurerm_managed_redis" "redis" {
 
 }
 
-resource "azurerm_redis_firewall_rule" "aks" {
-  name                = "allowaksegress"
-  redis_cache_name    = azurerm_managed_redis.redis.name
-  resource_group_name = var.resource_group_name
-  start_ip            = "4.211.70.39"
-  end_ip              = "4.211.70.39"
+# resource "azurerm_redis_firewall_rule" "aks" {
+#   name                = "allowaksegress"
+#   redis_cache_name    = azurerm_managed_redis.redis.name
+#   resource_group_name = var.resource_group_name
+#   start_ip            = "4.211.70.39"
+#   end_ip              = "4.211.70.39"
+# }
+
+resource "terraform_data" "redis_firewall_rule" {
+  triggers_replace = [
+    "4.211.70.39"
+  ]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      az redis firewall-rule create \
+        --resource-group ${var.resource_group_name} \
+        --name ${azurerm_managed_redis.redis.name} \
+        --rule-name allowaksegress \
+        --start-ip 4.211.70.39 \
+        --end-ip 4.211.70.39
+    EOT
+  }
 }
 
 # Storage Account Azure
