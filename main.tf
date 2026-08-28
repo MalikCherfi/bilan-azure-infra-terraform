@@ -206,7 +206,7 @@ resource "azurerm_storage_account" "sa" {
   network_rules {
     default_action             = "Deny"
     bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = [ddata.azurerm_kubernetes_cluster.shared.agent_pool_profile[0].vnet_subnet_id]
+    virtual_network_subnet_ids = [data.azurerm_kubernetes_cluster.shared.agent_pool_profile[0].vnet_subnet_id]
   }
 }
 
