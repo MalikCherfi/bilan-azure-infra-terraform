@@ -210,7 +210,7 @@ resource "terraform_data" "redis_firewall_rule" {
 
   provisioner "local-exec" {
     command = <<EOT
-      az redis firewall-rule create \
+      az redis firewall-rules create \
         --resource-group ${var.resource_group_name} \
         --name ${azurerm_managed_redis.redis.name} \
         --rule-name allowaksegress \
