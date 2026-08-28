@@ -20,6 +20,11 @@ data "azurerm_kubernetes_cluster" "shared" {
   resource_group_name = "rg-shared-prf2026"
 }
 
+data "azurerm_subnet" "aks_subnet" {
+  name                 = "aks-subnet"
+  virtual_network_name = "aks-vnet-15722120" # Update with new VNet name if cluster is recreated
+  resource_group_name  = data.azurerm_kubernetes_cluster.shared.node_resource_group
+}
 provider "helm" {
   kubernetes = {
     host                   = data.azurerm_kubernetes_cluster.shared.kube_admin_config.0.host
@@ -29,288 +34,62 @@ provider "helm" {
   }
 }
 
-# Create a namespace for ingress-nginx
-resource "helm_release" "ingress_nginx" {
-  name             = "ingress-nginx"
-  repository       = "https://kubernetes.github.io/ingress-nginx"
-  chart            = "ingress-nginx"
-  namespace        = "ingress-nginx"
-  create_namespace = true
-
-  set = [{
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-request-path"
-    value = "/healthz"
-  }]
+module "ingress-nginx" {
+  source = "./modules/ingress-nginx"
 }
 
-data "azurerm_subnet" "aks_subnet" {
-  name                 = "aks-subnet"
-  virtual_network_name = "aks-vnet-15722120"
-  resource_group_name  = data.azurerm_kubernetes_cluster.shared.node_resource_group
-}
-# Create a key vault
-resource "azurerm_key_vault" "keyvault" {
-  name                          = "keyvault-${var.owner}"
-  location                      = var.location
-  resource_group_name           = var.resource_group_name
-  rbac_authorization_enabled    = false
-  enabled_for_disk_encryption   = true
-  tenant_id                     = data.azurerm_client_config.current.tenant_id
-  soft_delete_retention_days    = 7
-  purge_protection_enabled      = false
-  public_network_access_enabled = true
-  tags                          = local.tags
+module "keyvault" {
+  source = "./modules/keyvault"
 
-  sku_name = "standard"
-
-  # Accès pour Terraform lui-même (l'identity OIDC qui exécute l'apply)
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azurerm_client_config.current.object_id
-
-    key_permissions     = ["Get", "List", "Create", "Delete"]
-    secret_permissions  = ["Get", "List", "Set", "Delete"]
-    storage_permissions = ["Get", "List"]
-  }
-
-  # Accès pour AKS (le kubelet qui va récupérer les secrets à l'exécution)
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
-
-    secret_permissions = ["Get"]
-  }
-
-  network_acls {
-    default_action             = "Deny"
-    bypass                     = "AzureServices"
-    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
-  }
-}
-
-resource "azurerm_key_vault_access_policy" "keyvault_access_policy" {
-  key_vault_id = azurerm_key_vault.keyvault.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = data.azurerm_client_config.current.object_id
-
-  secret_permissions = [
-    "Get",
-    "List",
-    "Set",
-    "Delete",
-    "Recover",
-    "Purge"
-  ]
-}
-
-resource "time_sleep" "wait_for_access_policy" {
-  depends_on      = [azurerm_key_vault.keyvault]
-  create_duration = "60s"
-}
-
-# Create a azure container registry
-resource "azurerm_container_registry" "acr" {
-  name                = "containerregistrymcherfi"
   resource_group_name = var.resource_group_name
   location            = var.location
-  sku                 = "Basic"
+  owner               = var.owner
   tags                = local.tags
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  object_id           = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
+  aks_object_id       = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
+  subnet_id           = data.azurerm_subnet.aks_subnet.id
 }
 
+module "container-registry" {
+  source = "./modules/container-registry"
 
-
-# Assign ACR pull role
-resource "azurerm_role_assignment" "acr_pull" {
-  principal_id         = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
-  role_definition_name = "AcrPull"
-  scope                = azurerm_container_registry.acr.id
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  tags                = local.tags
+  aks_object_id       = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
 }
 
-resource "random_password" "psql_admin" {
-  length  = 24
-  special = true
-}
+module "psql" {
+  source = "./modules/postgresql"
 
-# Create a postgresql flexible server
-resource "azurerm_postgresql_flexible_server" "psql_flexible_server" {
-  name                   = "psqlflexibleservermcherfi"
   resource_group_name    = var.resource_group_name
   location               = var.location
-  version                = "16"
-  administrator_login    = "malikcherfi"
-  administrator_password = random_password.psql_admin.result
-  storage_mb             = 32768
-  sku_name               = "B_Standard_B1ms"
   tags                   = local.tags
-  zone                   = "1"
+  keyvault_id            = module.keyvault.keyvault_id
+  wait_for_access_policy = module.keyvault.wait_for_access_policy
+  keyvault_access_policy = module.keyvault.keyvault_access_policy
 }
 
-# Create a key vault secret
-resource "azurerm_key_vault_secret" "psql_password" {
-  name         = "psql-admin-password"
-  value        = random_password.psql_admin.result
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
+module "redis" {
+  source = "./modules/redis"
+
+  resource_group_name    = var.resource_group_name
+  location               = var.location
+  tags                   = local.tags
+  keyvault_id            = module.keyvault.keyvault_id
+  wait_for_access_policy = module.keyvault.wait_for_access_policy
+  keyvault_access_policy = module.keyvault.keyvault_access_policy
 }
 
-# Create a postgresql database
-resource "azurerm_postgresql_flexible_server_database" "psql_database" {
-  name      = "psql_database"
-  server_id = azurerm_postgresql_flexible_server.psql_flexible_server.id
-  collation = "en_US.utf8"
-  charset   = "UTF8"
-}
+module "storage-account" {
+  source = "./modules/storage-account"
 
-# Autoriser les services Azure (dont le cluster AKS) à contacter PostgreSQL
-resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
-  name             = "allow-azure-services"
-  server_id        = azurerm_postgresql_flexible_server.psql_flexible_server.id
-  start_ip_address = "4.211.70.39"
-  end_ip_address   = "4.211.70.39"
-}
-
-
-
-# (Optionnel mais recommandé) Stocker le FQDN de la base dans Key Vault
-resource "azurerm_key_vault_secret" "psql_host" {
-  name         = "psql-host"
-  value        = azurerm_postgresql_flexible_server.psql_flexible_server.fqdn
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
-}
-
-# Create a redis cache
-resource "azurerm_managed_redis" "redis" {
-  name                = "redismcherfi"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  sku_name            = "Balanced_B0"
-  tags                = local.tags
-
-  default_database {
-    access_keys_authentication_enabled = true
-    clustering_policy                  = "OSSCluster"
-    eviction_policy                    = "VolatileLRU"
-  }
-
-}
-
-# resource "azurerm_redis_firewall_rule" "aks" {
-#   name                = "allowaksegress"
-#   redis_cache_name    = azurerm_managed_redis.redis.name
-#   resource_group_name = var.resource_group_name
-#   start_ip            = "4.211.70.39"
-#   end_ip              = "4.211.70.39"
-# }
-
-# Storage Account Azure
-resource "azurerm_storage_account" "sa" {
-  name                     = "stbilanappmcherfi"
-  resource_group_name      = var.resource_group_name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-
-  network_rules {
-    default_action             = "Deny"
-    bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
-  }
-}
-
-# Container Blob par défaut (optionnel mais recommandé)
-resource "azurerm_storage_container" "container" {
-  name                  = "uploads"
-  storage_account_id    = azurerm_storage_account.sa.id
-  container_access_type = "private"
-}
-
-# Génération automatique du token SAS
-data "azurerm_storage_account_sas" "sas" {
-  connection_string = azurerm_storage_account.sa.primary_connection_string
-  https_only        = true
-
-  resource_types {
-    service   = true
-    container = true
-    object    = true
-  }
-
-  services {
-    blob  = true
-    queue = false
-    table = false
-    file  = false
-  }
-
-  permissions {
-    read    = true
-    write   = true
-    delete  = true
-    list    = true
-    add     = true
-    create  = true
-    update  = true
-    process = false
-    tag     = false
-    filter  = false
-  }
-
-  start  = "2026-01-01T00:00:00Z"
-  expiry = "2028-01-01T00:00:00Z"
-}
-
-# Stockage des secrets dans Key Vault
-resource "azurerm_key_vault_secret" "storage_name" {
-  name         = "storage-account-name"
-  value        = azurerm_storage_account.sa.name
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [azurerm_key_vault_access_policy.keyvault_access_policy]
-
-}
-
-resource "azurerm_key_vault_secret" "storage_sas" {
-  name         = "storage-sas-token"
-  value        = data.azurerm_storage_account_sas.sas.sas
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [azurerm_key_vault_access_policy.keyvault_access_policy]
-}
-
-resource "azurerm_key_vault_secret" "container_name" {
-  name         = "storage-container-name"
-  value        = azurerm_storage_container.container.name
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [azurerm_key_vault_access_policy.keyvault_access_policy]
-}
-
-output "redis_primary_access_key" {
-  value     = azurerm_managed_redis.redis.default_database[0].primary_access_key
-  sensitive = true
-}
-
-resource "azurerm_key_vault_secret" "redis_password" {
-  name         = "redis-password"
-  value        = azurerm_managed_redis.redis.default_database[0].primary_access_key
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
-}
-
-resource "azurerm_key_vault_secret" "redis_hostname" {
-  name         = "redis-hostname"
-  value        = azurerm_managed_redis.redis.hostname
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
-}
-
-resource "random_password" "backend_api_key" {
-  length  = 32
-  special = false
-}
-
-resource "azurerm_key_vault_secret" "backend-api-key" {
-  name         = "backend-api-key"
-  value        = random_password.backend_api_key.result
-  key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
+  resource_group_name    = var.resource_group_name
+  location               = var.location
+  tags                   = local.tags
+  subnet_id              = data.azurerm_subnet.aks_subnet.id
+  keyvault_id            = module.keyvault.keyvault_id
+  keyvault_access_policy = module.keyvault.keyvault_access_policy
 }
 
