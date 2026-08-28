@@ -42,6 +42,12 @@ resource "helm_release" "ingress_nginx" {
     value = "/healthz"
   }]
 }
+
+data "azurerm_subnet" "aks_subnet" {
+  name                 = "aks-subnet"
+  virtual_network_name = "aks-vnet-15722120"
+  resource_group_name  = data.azurerm_kubernetes_cluster.shared.node_resource_group
+}
 # Create a key vault
 resource "azurerm_key_vault" "keyvault" {
   name                          = "keyvault-${var.owner}"
@@ -78,7 +84,7 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action             = "Deny"
     bypass                     = "AzureServices"
-    virtual_network_subnet_ids = [data.azurerm_kubernetes_cluster.shared.agent_pool_profile[0].vnet_subnet_id]
+    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
   }
 }
 
@@ -206,7 +212,7 @@ resource "azurerm_storage_account" "sa" {
   network_rules {
     default_action             = "Deny"
     bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = [data.azurerm_kubernetes_cluster.shared.agent_pool_profile[0].vnet_subnet_id]
+    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
   }
 }
 
