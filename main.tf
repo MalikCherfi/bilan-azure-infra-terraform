@@ -221,7 +221,7 @@ resource "azurerm_managed_redis" "redis" {
 resource "azurerm_redis_firewall_rule" "aks" {
   name                = "allow-aks-egress"
   redis_cache_name    = azurerm_managed_redis.redis.name
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   start_ip            = data.azurerm_public_ip.aks_egress.ip_address
   end_ip              = data.azurerm_public_ip.aks_egress.ip_address
 }
