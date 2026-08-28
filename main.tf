@@ -43,8 +43,15 @@ resource "helm_release" "ingress_nginx" {
   }]
 }
 
+# 1. Lister les IP publiques créées par AKS dans le groupe MC_
+data "azurerm_resources" "aks_public_ips" {
+  resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
+  type                = "Microsoft.Network/publicIPAddresses"
+}
+
+# 2. Récupérer l'IP publique générée pour le Load Balancer d'AKS
 data "azurerm_public_ip" "aks_egress" {
-  name                = split("/", element(tolist(data.azurerm_kubernetes_cluster.shared.network_profile[0].load_balancer_profile[0].effective_outbound_ips), 0))[8]
+  name                = data.azurerm_resources.aks_public_ips.resources[0].name
   resource_group_name = data.azurerm_kubernetes_cluster.shared.node_resource_group
 }
 
@@ -102,7 +109,7 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action             = "Deny"
     bypass                     = "AzureServices"
-    virtual_network_subnet_ids = [azurerm_subnet.aks_subnet.id]
+    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
   }
 }
 
@@ -230,7 +237,7 @@ resource "azurerm_storage_account" "sa" {
   network_rules {
     default_action             = "Deny"
     bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = [azurerm_subnet.aks_subnet.id]
+    virtual_network_subnet_ids = [data.azurerm_subnet.aks_subnet.id]
   }
 }
 
