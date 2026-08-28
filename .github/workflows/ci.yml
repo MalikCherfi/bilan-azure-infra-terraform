@@ -17,6 +17,8 @@ jobs:
       TF_VAR_resource_group_name: ${{ vars.TF_VAR_RESOURCE_GROUP_NAME }}
       TF_VAR_location: ${{ vars.TF_VAR_LOCATION }}
       TF_VAR_plan_name: ${{ vars.TF_VAR_PLAN_NAME }}
+      TF_VAR_node_resource_group_name: ${{ vars.TF_VAR_NODE_RESOURCE_GROUP_NAME }}
+      TF_VAR_cluster_name: ${{ vars.TF_VAR_CLUSTER_NAME }}
 
     runs-on: ubuntu-latest
 
