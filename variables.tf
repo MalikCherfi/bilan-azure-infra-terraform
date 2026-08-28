@@ -23,3 +23,13 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "node_resource_group_name" {
+  description = "Name of the node resource group for AKS cluster"
+  type        = string
+}
+
+variable "cluster_name" {
+  description = "Name of the AKS cluster"
+  type        = string
+}
