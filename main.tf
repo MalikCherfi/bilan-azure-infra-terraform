@@ -162,7 +162,7 @@ resource "azurerm_key_vault_secret" "psql_host" {
   name         = "psql-host"
   value        = azurerm_postgresql_flexible_server.psql_flexible_server.fqdn
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy]
+  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
 }
 
 # Create a redis cache
