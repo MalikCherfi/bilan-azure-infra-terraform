@@ -78,7 +78,7 @@ jobs:
         run: terraform destroy -auto-approve
 
       - name: Retirer l'IP du runner (Cleanup)
-        if: always()
+        if: always() && inputs.action == 'apply'
         run: |
           RUNNER_IP=$(curl -s https://api.ipify.org)
           az keyvault network-rule remove \
