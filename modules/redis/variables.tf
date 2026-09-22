@@ -18,13 +18,3 @@ variable "keyvault_id" {
   description = "Key Vault ID"
   type        = string
 }
-
-variable "keyvault_access_policy" {
-  description = "Key Vault access policy"
-  type        = string
-}
-
-variable "wait_for_access_policy" {
-  description = "Wait for access policy"
-  default     = false
-}
