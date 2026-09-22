@@ -69,6 +69,8 @@ module "psql" {
   keyvault_id            = module.keyvault.keyvault_id
   wait_for_access_policy = module.keyvault.wait_for_access_policy
   keyvault_access_policy = module.keyvault.keyvault_access_policy
+
+  depends_on = [module.keyvault]
 }
 
 module "redis" {
@@ -80,6 +82,8 @@ module "redis" {
   keyvault_id            = module.keyvault.keyvault_id
   wait_for_access_policy = module.keyvault.wait_for_access_policy
   keyvault_access_policy = module.keyvault.keyvault_access_policy
+
+  depends_on = [module.keyvault]
 }
 
 module "storage-account" {
@@ -91,5 +95,7 @@ module "storage-account" {
   subnet_id              = data.azurerm_subnet.aks_subnet.id
   keyvault_id            = module.keyvault.keyvault_id
   keyvault_access_policy = module.keyvault.keyvault_access_policy
+
+  depends_on = [module.keyvault]
 }
 
