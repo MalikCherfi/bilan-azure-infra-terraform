@@ -40,7 +40,7 @@ resource "azurerm_key_vault_secret" "psql_host" {
   name         = "psql-host"
   value        = azurerm_postgresql_flexible_server.psql_flexible_server.fqdn
   key_vault_id = var.keyvault_id
-  depends_on   = [var.wait_for_access_policy, var.keyvault_access_policy, var.keyvault]
+  depends_on   = [var.wait_for_access_policy, var.keyvault_access_policy]
 }
 
 # Stock admin password in key vault
@@ -48,5 +48,5 @@ resource "azurerm_key_vault_secret" "psql_password" {
   name         = "psql-admin-password"
   value        = random_password.psql_admin.result
   key_vault_id = var.keyvault_id
-  depends_on   = [var.wait_for_access_policy, var.keyvault_access_policy, var.keyvault]
+  depends_on   = [var.wait_for_access_policy, var.keyvault_access_policy]
 }
