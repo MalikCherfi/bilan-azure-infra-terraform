@@ -61,7 +61,6 @@ resource "azurerm_key_vault_secret" "storage_name" {
   name         = "storage-account-name"
   value        = azurerm_storage_account.sa.name
   key_vault_id = var.keyvault_id
-  depends_on   = [var.keyvault_access_policy]
 
 }
 
@@ -69,12 +68,10 @@ resource "azurerm_key_vault_secret" "storage_sas" {
   name         = "storage-sas-token"
   value        = data.azurerm_storage_account_sas.sas.sas
   key_vault_id = var.keyvault_id
-  depends_on   = [var.keyvault_access_policy]
 }
 
 resource "azurerm_key_vault_secret" "container_name" {
   name         = "storage-container-name"
   value        = azurerm_storage_container.container.name
   key_vault_id = var.keyvault_id
-  depends_on   = [var.keyvault_access_policy]
 }
