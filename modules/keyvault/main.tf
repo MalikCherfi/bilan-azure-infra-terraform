@@ -1,4 +1,3 @@
-# Create a key vault
 resource "azurerm_key_vault" "keyvault" {
   name                          = "keyvault-${var.owner}"
   location                      = var.location
@@ -13,17 +12,7 @@ resource "azurerm_key_vault" "keyvault" {
 
   sku_name = "standard"
 
-  # Access for the current user (to manage the key vault)
-  access_policy {
-    tenant_id = var.tenant_id
-    object_id = var.object_id
-
-    key_permissions     = ["Get", "List", "Create", "Delete"]
-    secret_permissions  = ["Get", "List", "Set", "Delete"]
-    storage_permissions = ["Get", "List"]
-  }
-
-  # Access for AKS (the kubelet that will retrieve secrets at runtime)
+  # Garde uniquement la policy AKS ici (pas de conflit, gérée nulle part ailleurs)
   access_policy {
     tenant_id = var.tenant_id
     object_id = var.aks_object_id
@@ -38,7 +27,6 @@ resource "azurerm_key_vault" "keyvault" {
   }
 }
 
-# Grant the current user access to the key vault
 resource "azurerm_key_vault_access_policy" "keyvault_access_policy" {
   key_vault_id = azurerm_key_vault.keyvault.id
   tenant_id    = var.tenant_id
@@ -55,11 +43,10 @@ resource "azurerm_key_vault_access_policy" "keyvault_access_policy" {
 }
 
 resource "time_sleep" "wait_for_access_policy" {
-  depends_on      = [azurerm_key_vault.keyvault]
+  depends_on      = [azurerm_key_vault_access_policy.keyvault_access_policy]
   create_duration = "60s"
 }
 
-# Stock API key in key vault
 resource "random_password" "backend_api_key" {
   length  = 32
   special = false
@@ -69,5 +56,5 @@ resource "azurerm_key_vault_secret" "backend-api-key" {
   name         = "backend-api-key"
   value        = random_password.backend_api_key.result
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy, azurerm_key_vault_access_policy.keyvault_access_policy]
+  depends_on   = [time_sleep.wait_for_access_policy]
 }
