@@ -23,8 +23,3 @@ variable "keyvault_id" {
   description = "Key Vault ID"
   type        = string
 }
-
-variable "keyvault_access_policy" {
-  description = "Key Vault access policy"
-  type        = string
-}
