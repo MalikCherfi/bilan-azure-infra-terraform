@@ -29,3 +29,8 @@ variable "keyvault_access_policy" {
   description = "Key Vault access policy"
   type        = string
 }
+
+variable "keyvault" {
+  description = "Key Vault object"
+  type        = any
+}
