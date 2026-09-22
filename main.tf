@@ -63,12 +63,10 @@ module "container-registry" {
 module "psql" {
   source = "./modules/psql"
 
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  tags                   = local.tags
-  keyvault_id            = module.keyvault.keyvault_id
-  wait_for_access_policy = module.keyvault.wait_for_access_policy
-  keyvault_access_policy = module.keyvault.keyvault_access_policy
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  tags                = local.tags
+  keyvault_id         = module.keyvault.keyvault_id
 
   depends_on = [module.keyvault]
 }
@@ -76,12 +74,10 @@ module "psql" {
 module "redis" {
   source = "./modules/redis"
 
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  tags                   = local.tags
-  keyvault_id            = module.keyvault.keyvault_id
-  wait_for_access_policy = module.keyvault.wait_for_access_policy
-  keyvault_access_policy = module.keyvault.keyvault_access_policy
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  tags                = local.tags
+  keyvault_id         = module.keyvault.keyvault_id
 
   depends_on = [module.keyvault]
 }
@@ -89,12 +85,11 @@ module "redis" {
 module "storage-account" {
   source = "./modules/storage-account"
 
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  tags                   = local.tags
-  subnet_id              = data.azurerm_subnet.aks_subnet.id
-  keyvault_id            = module.keyvault.keyvault_id
-  keyvault_access_policy = module.keyvault.keyvault_access_policy
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  tags                = local.tags
+  subnet_id           = data.azurerm_subnet.aks_subnet.id
+  keyvault_id         = module.keyvault.keyvault_id
 
   depends_on = [module.keyvault]
 }
