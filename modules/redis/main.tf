@@ -26,12 +26,10 @@ resource "azurerm_key_vault_secret" "redis_password" {
   name         = "redis-password"
   value        = azurerm_managed_redis.redis.default_database[0].primary_access_key
   key_vault_id = var.keyvault_id
-  depends_on   = [var.wait_for_access_policy, var.keyvault_access_policy]
 }
 
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = "redis-hostname"
   value        = azurerm_managed_redis.redis.hostname
   key_vault_id = var.keyvault_id
-  depends_on   = [var.wait_for_access_policy, var.keyvault_access_policy]
 }
