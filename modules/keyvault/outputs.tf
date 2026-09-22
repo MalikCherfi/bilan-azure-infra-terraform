@@ -9,3 +9,7 @@ output "keyvault_access_policy" {
 output "wait_for_access_policy" {
   value = time_sleep.wait_for_access_policy
 }
+
+output "keyvault" {
+  value = azurerm_key_vault.keyvault
+}
