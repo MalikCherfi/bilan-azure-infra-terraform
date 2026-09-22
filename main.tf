@@ -69,7 +69,6 @@ module "psql" {
   keyvault_id            = module.keyvault.keyvault_id
   wait_for_access_policy = module.keyvault.wait_for_access_policy
   keyvault_access_policy = module.keyvault.keyvault_access_policy
-  keyvault               = module.keyvault.keyvault
 }
 
 module "redis" {
