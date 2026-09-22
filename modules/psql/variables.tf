@@ -21,7 +21,6 @@ variable "keyvault_id" {
 
 variable "wait_for_access_policy" {
   description = "Wait for access policy"
-  type        = bool
   default     = false
 }
 
