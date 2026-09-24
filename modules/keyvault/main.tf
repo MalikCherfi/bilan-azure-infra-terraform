@@ -17,6 +17,12 @@ resource "azurerm_key_vault" "keyvault" {
     bypass                     = "AzureServices"
     virtual_network_subnet_ids = [var.subnet_id]
   }
+
+  lifecycle {
+    ignore_changes = [
+      network_acls[0].ip_rules
+    ]
+  }
 }
 
 resource "azurerm_key_vault_access_policy" "runner" {
