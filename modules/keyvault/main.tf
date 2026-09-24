@@ -12,39 +12,38 @@ resource "azurerm_key_vault" "keyvault" {
 
   sku_name = "standard"
 
-  # Garde uniquement la policy AKS ici (pas de conflit, gérée nulle part ailleurs)
-  access_policy {
-    tenant_id = var.tenant_id
-    object_id = var.aks_object_id
-
-    secret_permissions = ["Get"]
-  }
-
   network_acls {
     default_action             = "Deny"
     bypass                     = "AzureServices"
     virtual_network_subnet_ids = [var.subnet_id]
+    ip_rules                   = var.runner_ip != "" ? [var.runner_ip] : []
   }
 }
 
-resource "azurerm_key_vault_access_policy" "keyvault_access_policy" {
+resource "azurerm_key_vault_access_policy" "runner" {
   key_vault_id = azurerm_key_vault.keyvault.id
   tenant_id    = var.tenant_id
   object_id    = var.object_id
 
   secret_permissions = [
-    "Get",
-    "List",
-    "Set",
-    "Delete",
-    "Recover",
-    "Purge"
+    "Get", "List", "Set", "Delete", "Recover", "Purge"
   ]
 }
 
+resource "azurerm_key_vault_access_policy" "aks" {
+  key_vault_id = azurerm_key_vault.keyvault.id
+  tenant_id    = var.tenant_id
+  object_id    = var.aks_object_id
+
+  secret_permissions = ["Get", "List"]
+}
+
 resource "time_sleep" "wait_for_access_policy" {
-  depends_on      = [azurerm_key_vault_access_policy.keyvault_access_policy]
-  create_duration = "60s"
+  depends_on = [
+    azurerm_key_vault_access_policy.runner,
+    azurerm_key_vault_access_policy.aks
+  ]
+  create_duration = "10s"
 }
 
 resource "random_password" "backend_api_key" {
@@ -56,5 +55,6 @@ resource "azurerm_key_vault_secret" "backend-api-key" {
   name         = "backend-api-key"
   value        = random_password.backend_api_key.result
   key_vault_id = azurerm_key_vault.keyvault.id
-  depends_on   = [time_sleep.wait_for_access_policy]
+
+  depends_on = [time_sleep.wait_for_access_policy]
 }
