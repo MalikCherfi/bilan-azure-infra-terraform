@@ -43,9 +43,3 @@ variable "subnet_id" {
   description = "ID of the subnet to allow access to the Key Vault"
   type        = string
 }
-
-variable "runner_ip" {
-  type        = string
-  default     = ""
-  description = "IP publique du runner GitHub Actions"
-}
