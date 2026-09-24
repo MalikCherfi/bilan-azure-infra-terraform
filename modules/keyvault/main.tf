@@ -16,7 +16,6 @@ resource "azurerm_key_vault" "keyvault" {
     default_action             = "Deny"
     bypass                     = "AzureServices"
     virtual_network_subnet_ids = [var.subnet_id]
-    ip_rules                   = var.runner_ip != "" ? [var.runner_ip] : []
   }
 }
 
@@ -46,16 +45,6 @@ resource "time_sleep" "wait_for_access_policy" {
   create_duration = "30s"
 }
 
-resource "time_sleep" "wait_for_network_acls" {
-  depends_on = [azurerm_key_vault.keyvault]
-
-  triggers = {
-    runner_ip = var.runner_ip
-  }
-
-  create_duration = "30s"
-}
-
 resource "random_password" "backend_api_key" {
   length  = 32
   special = false
@@ -66,8 +55,5 @@ resource "azurerm_key_vault_secret" "backend-api-key" {
   value        = random_password.backend_api_key.result
   key_vault_id = azurerm_key_vault.keyvault.id
 
-  depends_on = [
-    time_sleep.wait_for_network_acls,
-    time_sleep.wait_for_access_policy
-  ]
+  depends_on = [time_sleep.wait_for_access_policy]
 }
