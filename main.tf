@@ -46,7 +46,7 @@ module "keyvault" {
   owner               = var.owner
   tags                = local.tags
   tenant_id           = data.azurerm_client_config.current.tenant_id
-  object_id           = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
+  object_id           = data.azurerm_client_config.current.object_id
   aks_object_id       = data.azurerm_kubernetes_cluster.shared.kubelet_identity[0].object_id
   subnet_id           = data.azurerm_subnet.aks_subnet.id
 }
