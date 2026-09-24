@@ -64,7 +64,10 @@ jobs:
           --name keyvault-malik-cherfi \
           --ip-address "$RUNNER_IP/32" || true
 
-          sleep 20
+          echo "Waiting for Key Vault network rule propagation..."
+          echo "Runner IP: $RUNNER_IP"
+
+          sleep 50
 
       - name: Terraform Init
         run: |
