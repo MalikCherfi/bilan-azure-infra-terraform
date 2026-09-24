@@ -40,15 +40,31 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Get Runner IP
-        run: echo "TF_VAR_runner_ip=$(curl -s https://api.ipify.org)" >> $GITHUB_ENV
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
 
       - name: Terraform Format Check
         run: terraform fmt -check -diff -recursive
         continue-on-error: true
+
+      - name: Key Vault Check
+        id: check_kv
+        run: |
+          if az keyvault show --name keyvault-malik-cherfi &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "Authorize runner IP on Key Vault"
+        if: steps.check_kv.outputs.exists == 'true'
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az keyvault network-rule add \
+          --name keyvault-malik-cherfi \
+          --ip-address "$RUNNER_IP/32" || true
+
+          sleep 20
 
       - name: Terraform Init
         run: |
@@ -72,3 +88,11 @@ jobs:
       - name: Terraform Destroy
         if: ${{ inputs.action == 'destroy' }}
         run: terraform destroy -auto-approve
+
+      - name: Retirer l'IP du runner (Cleanup)
+        if: always() && inputs.action == 'apply' && steps.check_kv.outputs.exists == 'true'
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az keyvault network-rule remove \
+          --name keyvault-malik-cherfi \
+          --ip-address "$RUNNER_IP/32"
